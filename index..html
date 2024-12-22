@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Management System</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .section {
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        padding: 15px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      input,
+      button {
+        margin: 5px 0;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Library Management System</h1>
+
+    <div class="section">
+      <h2>Add Book</h2>
+      <input type="text" id="book-title" placeholder="Book Title" />
+      <input type="text" id="book-isbn" placeholder="ISBN" />
+      <button onclick="createBook()">Add Book</button>
+    </div>
+
+    <div class="section">
+      <h2>Add Author</h2>
+      <input type="text" id="author-name" placeholder="Author Name" />
+      <button onclick="createAuthor()">Add Author</button>
+    </div>
+
+    <div class="section">
+      <h2>Add Author to Book</h2>
+      <input type="number" id="book-id" placeholder="Book ID" />
+      <input type="number" id="author-id" placeholder="Author ID" />
+      <button onclick="addAuthorToBook()">Add Author to Book</button>
+    </div>
+
+    <div class="section">
+      <h2>Books</h2>
+      <table id="books-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>ISBN</th>
+            <th>Authors</th>
+          </tr>
+        </thead>
+        <tbody id="books-body">
+          <!-- Books will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Authors</h2>
+      <table id="authors-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Books</th>
+          </tr>
+        </thead>
+        <tbody id="authors-body">
+          <!-- Authors will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      const API_BASE_URL = "http://127.0.0.1:8000";
+
+      async function createBook() {
+        const title = document.getElementById("book-title").value;
+        const isbn = document.getElementById("book-isbn").value;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/books/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ title, isbn }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to create book");
+          }
+
+          const book = await response.json();
+          alert(`Book created: ${book.title}`);
+          fetchBooks();
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Failed to create book");
+        }
+      }
+
+      async function createAuthor() {
+        const name = document.getElementById("author-name").value;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/authors/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to create author");
+          }
+
+          const author = await response.json();
+          alert(`Author created: ${author.name}`);
+          fetchAuthors();
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Failed to create author");
+        }
+      }
+
+      async function addAuthorToBook() {
+        const bookId = document.getElementById("book-id").value;
+        const authorId = document.getElementById("author-id").value;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/books/add-author/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ book_id: bookId, author_id: authorId }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to add author to book");
+          }
+
+          const result = await response.json();
+          alert(result.message);
+          fetchBooks();
+          fetchAuthors();
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Failed to add author to book");
+        }
+      }
+
+      async function fetchBooks() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/books/`);
+          const books = await response.json();
+          const booksBody = document.getElementById("books-body");
+          booksBody.innerHTML = "";
+
+          books.forEach((book) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                        <td>${book.id}</td>
+                        <td>${book.title}</td>
+                        <td>${book.isbn}</td>
+                        <td>${book.authors
+                          .map((author) => author.name)
+                          .join(", ")}</td>
+                    `;
+            booksBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error("Error fetching books:", error);
+        }
+      }
+
+      async function fetchAuthors() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/authors/`);
+          const authors = await response.json();
+          const authorsBody = document.getElementById("authors-body");
+          authorsBody.innerHTML = "";
+
+          authors.forEach((author) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                        <td>${author.id}</td>
+                        <td>${author.name}</td>
+                        <td>${author.books
+                          .map((book) => book.title)
+                          .join(", ")}</td>
+                    `;
+            authorsBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error("Error fetching authors:", error);
+        }
+      }
+
+      // Fetch initial data when page loads
+      fetchBooks();
+      fetchAuthors();
+    </script>
+  </body>
+</html>
